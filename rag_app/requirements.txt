@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pypdf
+langchain
+langchain-openai
+langchain-text-splitters
+weaviate-client>=4.9.0
+flashrank
+fonttools
+psycopg[binary]
+bcrypt
