@@ -1,0 +1,34 @@
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables & Secrets (NEVER COMMIT)
+.env
+*.env
+rag_app/.env
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+__MACOSX/
+
+# Model Caches & ONNX Downloads
+rag_app/data/cache/
+rag_app/models/
+**/cache/
+**/models/
