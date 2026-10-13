@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview RAG Coach — Practice AI/ML Interviews from Your Notes</title>
+  <meta name="description" content="A RAG-powered interview coach: ask AI/ML questions answered from your own study PDFs with citations, or take a graded mock interview." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar glass" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">◆</div>
+        <div>
+          <div class="brand-name">Interview Coach</div>
+          <div class="brand-sub">RAG over your study PDFs</div>
+        </div>
+      </div>
+
+      <nav class="mode-switch" role="tablist" aria-label="Mode">
+        <button id="mode-ask" class="mode-btn active" role="tab" aria-selected="true" data-mode="ask">
+          <span class="ico">💬</span> Ask &amp; Learn
+        </button>
+        <button id="mode-qa" class="mode-btn" role="tab" aria-selected="false" data-mode="qa">
+          <span class="ico">📖</span> Q &amp; A
+        </button>
+        <button id="mode-interview" class="mode-btn" role="tab" aria-selected="false" data-mode="interview">
+          <span class="ico">🎯</span> Mock Interview
+        </button>
+        <button id="mode-coding" class="mode-btn" role="tab" aria-selected="false" data-mode="coding">
+          <span class="ico">💻</span> Coding
+        </button>
+      </nav>
+
+      <div class="conv-section" id="conv-section">
+        <div class="conv-head">
+          <span class="conv-title">Chats</span>
+          <button class="btn-new-chat" id="new-chat-btn" title="Start new conversation">+ New Chat</button>
+        </div>
+        <div class="conv-list" id="conv-list">
+          <div class="conv-empty" id="conv-empty">Sign in to save chats</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer" id="sidebar-footer">
+        <button class="btn ghost full-width" id="open-auth-btn">🔐 Sign In / Register</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile-only" id="toggle-sidebar" aria-label="Toggle sidebar">☰</button>
+        <h1 id="page-title">Ask &amp; Learn</h1>
+        <div class="topbar-actions">
+          <div id="user-pill" class="user-pill hidden">
+            <span class="user-name" id="user-name"></span>
+            <button class="btn-logout" id="logout-btn" title="Log out">⏻</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ASK MODE -->
+      <section id="view-ask" class="view active" aria-labelledby="page-title">
+        <div class="thread" id="thread">
+          <div class="empty-state" id="ask-empty">
+            <div class="empty-glow">✦</div>
+            <h2>What do you want to master today?</h2>
+            <p>Answers are grounded in your PDFs, with page citations.</p>
+            <div class="suggestions">
+              <button class="suggest">Explain RAG vs fine-tuning and when to use each</button>
+              <button class="suggest">LoRA vs QLoRA vs full fine-tuning</button>
+              <button class="suggest">What is the bias-variance trade-off?</button>
+              <button class="suggest">How do multi-agent systems coordinate?</button>
+            </div>
+          </div>
+        </div>
+        <form class="composer glass" id="ask-form">
+          <textarea id="ask-input" rows="1" placeholder="Ask an interview question…" aria-label="Question"></textarea>
+          <button type="submit" class="send-btn" id="ask-send" aria-label="Send">➤</button>
+        </form>
+      </section>
+
+      <!-- Q & A MODE -->
+      <section id="view-qa" class="view" aria-label="Q & A Practice">
+        <div class="qa-wrap">
+          <div class="qa-controls glass">
+            <div class="qa-filter-group">
+              <label for="qa-topic-select" class="qa-lbl">Topic:</label>
+              <select id="qa-topic-select" class="qa-select" aria-label="Select Topic">
+                <option value="All">All Topics</option>
+              </select>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="Difficulty">
+              <button class="seg-btn" data-qa-diff="easy" id="qa-diff-easy">Easy</button>
+              <button class="seg-btn active" data-qa-diff="medium" id="qa-diff-medium">Medium</button>
+              <button class="seg-btn" data-qa-diff="hard" id="qa-diff-hard">Hard</button>
+            </div>
+            <button class="btn primary" id="qa-new-btn">✦ New Q&amp;A</button>
+          </div>
+
+          <article class="card glass qa-card" id="qa-card">
+            <div class="qa-meta">
+              <span class="tag" id="qa-topic-tag">All Topics</span>
+              <span class="tag subtle" id="qa-diff-tag">MEDIUM</span>
+              <span class="tag subtle" id="qa-concept-tag">Interview Prep</span>
+              <span class="qa-counter" id="qa-counter">Card 1</span>
+            </div>
+            <h2 class="qa-question" id="qa-question-text">
+              <span class="loading-pulse">🔍 Finding an interview question from your study material...</span>
+            </h2>
+            
+            <div class="qa-answer-box">
+              <div class="qa-answer-header">💡 Answer &amp; Explanation</div>
+              <div class="md" id="qa-answer-text">
+                <div class="qa-skeleton">
+                  <div class="typing" style="margin-bottom:12px;"><i></i><i></i><i></i></div>
+                  <p style="color:var(--muted); font-size:14px; line-height:1.6;">
+                    Generating student-friendly explanation with intuitive analogies, step-by-step breakdown, and exact PDF page citations...
+                  </p>
+                </div>
+              </div>
+              <div class="sources" id="qa-sources">
+                <span style="font-size:12px; color:var(--faint);">Searching citations in Weaviate...</span>
+              </div>
+            </div>
+
+            <div class="qa-nav-actions">
+              <button class="btn ghost" id="qa-prev-btn" disabled>⬅️ Previous</button>
+              <span class="qa-index-lbl" id="qa-index-lbl">Card 1</span>
+              <button class="btn primary" id="qa-next-btn">Next ➡️</button>
+            </div>
+          </article>
+
+          <div class="empty-state hidden" id="qa-empty">
+            <div class="empty-glow">📖</div>
+            <h2>Interview Q &amp; A Practice</h2>
+            <p>Select your topic and difficulty (Easy, Medium, Hard). Review interview-oriented questions paired directly with simple explanations and exact PDF references.</p>
+            <button class="btn primary" style="margin-top:16px;" id="qa-start-btn">✦ Start Practicing</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- INTERVIEW MODE -->
+      <section id="view-interview" class="view" aria-label="Mock interview">
+        <div class="iv-wrap">
+          <div class="iv-controls glass">
+            <div class="seg" role="radiogroup" aria-label="Difficulty">
+              <button class="seg-btn" data-diff="easy" id="diff-easy">Easy</button>
+              <button class="seg-btn active" data-diff="medium" id="diff-medium">Medium</button>
+              <button class="seg-btn" data-diff="hard" id="diff-hard">Hard</button>
+            </div>
+            <button class="btn primary" id="new-question">✦ New question</button>
+          </div>
+
+          <article class="card glass q-card hidden" id="q-card">
+            <div class="q-meta">
+              <span class="tag" id="q-topic"></span>
+              <span class="tag subtle" id="q-diff"></span>
+              <span class="tag subtle" id="q-concept"></span>
+              <span class="timer" id="q-timer">00:00</span>
+            </div>
+            <h2 class="q-text" id="q-text"></h2>
+            <textarea id="answer-input" class="answer-input" rows="7"
+              placeholder="Answer as you would in a real interview… (Ctrl+Enter to submit)"></textarea>
+            <div class="q-actions">
+              <button class="btn ghost" id="skip-btn">Reveal answer</button>
+              <button class="btn primary" id="submit-answer">Submit for grading</button>
+            </div>
+          </article>
+
+          <article class="card glass result-card hidden" id="result-card">
+            <div class="result-head">
+              <div class="score-ring" id="score-ring">
+                <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52"/></svg>
+                <div class="score-num"><span id="score-val">0</span><small>/10</small></div>
+              </div>
+              <div>
+                <div class="verdict" id="verdict"></div>
+                <div class="result-sub">Graded against your study material</div>
+              </div>
+            </div>
+            <div class="fb-grid">
+              <div class="fb good"><h3>✓ Strengths</h3><ul id="strengths"></ul></div>
+              <div class="fb gap"><h3>△ Gaps to cover</h3><ul id="gaps"></ul></div>
+            </div>
+            <div class="model-answer">
+              <h3>Model answer</h3>
+              <div class="md" id="model-answer"></div>
+              <div class="sources" id="iv-sources"></div>
+            </div>
+            <div class="follow-up">
+              <div><span class="fu-lbl">Interviewer follow-up</span><p id="follow-up"></p></div>
+              <div class="fu-actions">
+                <button class="btn ghost" id="answer-followup">Answer follow-up</button>
+                <button class="btn primary" id="next-question">Next question →</button>
+              </div>
+            </div>
+          </article>
+
+          <div class="empty-state" id="iv-empty">
+            <div class="empty-glow">🎯</div>
+            <h2>Ready for a mock interview?</h2>
+            <p>Pick a topic and difficulty, then hit <b>New question</b>. You'll get a score, gaps and a model answer.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CODING PRACTICE MODE -->
+      <section id="view-coding" class="view" aria-label="Coding Practice">
+        <div class="coding-wrap">
+          <div class="coding-controls glass">
+            <div class="coding-filter-group">
+              <label for="coding-cat-select" class="coding-lbl">Category:</label>
+              <select id="coding-cat-select" class="coding-select" aria-label="Select Coding Category">
+                <option value="All">All Categories</option>
+                <option value="DSA">DSA for AI</option>
+                <option value="Python">Python Essentials</option>
+                <option value="FastAPI">FastAPI &amp; APIs</option>
+                <option value="LangChain">LangChain &amp; LCEL</option>
+                <option value="LangGraph">LangGraph Workflows</option>
+                <option value="RAG &amp; Vector DB">RAG &amp; Vector Search</option>
+                <option value="PyTorch">PyTorch &amp; Modeling</option>
+              </select>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="Difficulty">
+              <button class="seg-btn" data-coding-diff="easy" id="coding-diff-easy">Easy</button>
+              <button class="seg-btn active" data-coding-diff="medium" id="coding-diff-medium">Medium</button>
+              <button class="seg-btn" data-coding-diff="hard" id="coding-diff-hard">Hard</button>
+            </div>
+            <button class="btn primary" id="coding-new-btn">✦ New Problem</button>
+          </div>
+
+          <article class="card glass coding-card" id="coding-card">
+            <div class="coding-meta">
+              <span class="tag" id="coding-cat-tag">All Categories</span>
+              <span class="tag subtle" id="coding-diff-tag">MEDIUM</span>
+              <span class="tag subtle" id="coding-title-tag">AI Engineer</span>
+              <span class="coding-counter" id="coding-counter">Problem 1</span>
+            </div>
+
+            <div class="coding-problem-box">
+              <div class="coding-problem-header">
+                <span class="coding-problem-icon">📋</span>
+                <h2 class="coding-problem-title" id="coding-problem-title">Problem Statement</h2>
+              </div>
+              <div class="md coding-problem-text" id="coding-problem-text">
+                <span class="loading-pulse">🔍 Selecting a realistic AI Engineer coding challenge...</span>
+              </div>
+            </div>
+
+            <div class="coding-solution-box">
+              <div class="coding-solution-header">
+                <span>🐍 Python Solution</span>
+                <button class="btn-copy-code" id="coding-copy-btn" title="Copy code">📋 Copy Code</button>
+              </div>
+              <pre class="coding-pre"><code class="language-python" id="coding-code-text"># Generating production code solution...</code></pre>
+            </div>
+
+            <div class="coding-explanation-box">
+              <div class="coding-explanation-header">💡 Step-by-Step Explanation &amp; Interview Tips</div>
+              <div class="md" id="coding-explanation-text">
+                <div class="qa-skeleton">
+                  <div class="typing" style="margin-bottom:12px;"><i></i><i></i><i></i></div>
+                  <p style="color:var(--muted); font-size:14px; line-height:1.6;">
+                    Preparing beginner-friendly walkthrough with intuition, code breakdown, complexity, and interview tips...
+                  </p>
+                </div>
+              </div>
+              <div class="sources" id="coding-sources"></div>
+            </div>
+
+            <div class="coding-nav-actions">
+              <button class="btn ghost" id="coding-prev-btn" disabled>⬅️ Previous</button>
+              <span class="coding-index-lbl" id="coding-index-lbl">Problem 1</span>
+              <button class="btn primary" id="coding-next-btn">Next ➡️</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Auth Modal -->
+  <div class="modal-backdrop hidden" id="auth-modal">
+    <div class="modal glass">
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tab-login" type="button">Sign In</button>
+        <button class="modal-tab" id="tab-register" type="button">Register</button>
+      </div>
+      <form id="auth-form" class="modal-form">
+        <div class="form-group">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" required placeholder="Choose a username" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" required placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="form-err hidden" id="auth-err"></div>
+        <button type="submit" class="btn primary full-width" id="auth-submit">Sign In</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
