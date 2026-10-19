@@ -1,3 +1,5 @@
+name: rag_app
+
 services:
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:1.28.4
